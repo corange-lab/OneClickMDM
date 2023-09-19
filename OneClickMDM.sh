@@ -74,7 +74,7 @@ echo -e "${YEL}===========================================${NC}"
 sleep 10
 
 # Restart the MacBook
-sudo reboot
+reboot
 
 # Command to close terminal (may depend on which terminal you're using, the below is for the default Terminal.app)
 osascript -e 'tell application "Terminal" to quit'
