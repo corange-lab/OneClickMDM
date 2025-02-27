@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Initiating MDM Bypass in Recovery Mode
+echo "Initiating MDM bypass in recovery mode..."
+if [ -d "/Volumes/Macintosh HD - Data" ]; then
+   	diskutil rename "Macintosh HD - Data" "Data"
+    echo "Renamed the volume successfully."
+fi
+
+# User Creation
+username="Apple"
+passw="1234"
+dscl_path='/Volumes/Data/private/var/db/dslocal/nodes/Default'
+
+echo "Setting up the new user..."
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UserShell "/bin/zsh"
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" RealName "$username"
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UniqueID "501"
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" PrimaryGroupID "20"
+mkdir "/Volumes/Data/Users/$username"
+dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" NFSHomeDirectory "/Users/$username"
+dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passw"
+dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" GroupMembership $username
+
+# Blocking MDM-related domains
+echo "Blocking MDM-related domains..."
+echo "0.0.0.0 deviceenrollment.apple.com" >>/Volumes/Macintosh\ HD/etc/hosts
+echo "0.0.0.0 mdmenrollment.apple.com" >>/Volumes/Macintosh\ HD/etc/hosts
+echo "0.0.0.0 iprofiles.apple.com" >>/Volumes/Macintosh\ HD/etc/hosts
+echo "Domains blocked successfully."
+
+# Adjusting MDM-related files
+echo "Adjusting system files related to MDM..."
+touch /Volumes/Data/private/var/db/.AppleSetupDone
+rm -rf /Volumes/Macintosh\ HD/var/db/ConfigurationProfiles/Settings/.cloudConfigHasActivationRecord
+rm -rf /Volumes/Macintosh\ HD/var/db/ConfigurationProfiles/Settings/.cloudConfigRecordFound
+touch /Volumes/Macintosh\ HD/var/db/ConfigurationProfiles/Settings/.cloudConfigProfileInstalled
+touch /Volumes/Macintosh\ HD/var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
+
+echo "MDM bypass completed successfully!"
+
+# Wait for 10 seconds
+sleep 10
+
+# Restart the MacBook
+reboot
+
+# Close Terminal
+osascript -e 'tell application "Terminal" to quit'
